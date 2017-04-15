@@ -19,6 +19,15 @@ def produceMask(image, lowerList, upperList):
 	sucThresh, thresh = cv2.threshold(mask, 32, 255, cv2.THRESH_BINARY)
 	return thresh
 
+def setContour(thresh, character):
+	contours = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
+	if contours and len(contours) > 0:
+		## largest contour
+		maxContour = max(contours, key=cv2.contourArea)
+		((x,y), radius) = cv2.minEnclosingCircle(maxContour)
+		character.x, character.y = int(x), int(y)
+
+
 def main():
 
 	cap = cv2.VideoCapture(0)
@@ -37,11 +46,11 @@ def main():
 	detectX, detectY = height/4, width/4
 
 	while(True):
-		startTime = clock()
+		# startTime = clock()
+		
 		## read the frame and flip
 		sucFrame, frame = cap.read()
 		frame = cv2.flip(frame, 1)
-		backGround = np.zeros((height,width,3), np.uint8)
 
 		## BGR -> HSV
 		hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -51,34 +60,17 @@ def main():
 		threshPink   = produceMask(hsv, [140,140,120], [180,220,256])
 
 		## display small thresh image
-		smallFrame = cv2.resize(threshPink, (0,0), fx=0.25, fy=0.25)
-		cv2.circle(smallFrame, (smallFrame.shape[1]/2,smallFrame.shape[0]/2), 3, (0,0,255), -1)
-		cv2.imshow('small', smallFrame)
+		# smallFrame = cv2.resize(threshPink, (0,0), fx=0.25, fy=0.25)
+		# cv2.circle(smallFrame, (smallFrame.shape[1]/2,smallFrame.shape[0]/2), 3, (0,0,255), -1)
+		# cv2.imshow('small', smallFrame)
 		
-		## find and draw contours
-		## yellow
-		contoursYellow = cv2.findContours(threshYellow.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
-		if contoursYellow and len(contoursYellow) > 0:
-			## largest contour
-			maxContour = max(contoursYellow, key=cv2.contourArea)
-			((xYellow,yYellow), radiusYellow) = cv2.minEnclosingCircle(maxContour)
-			guardian.x, guardian.y = int(xYellow), int(yYellow)
+		## set contours
+		setContour(threshYellow, guardian)
+		setContour(threshPink, princess)
 
-			## draw circles
-			if radiusYellow > 10:
-				guardian.draw(frame)
-
-		## pink
-		contoursPink = cv2.findContours(threshPink.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
-		if contoursPink and len(contoursPink) > 0:
-			## largest contour
-			maxContour = max(contoursPink, key=cv2.contourArea)
-			((xPink,yPink), radiusPink) = cv2.minEnclosingCircle(maxContour)
-			princess.x, princess.y = int(xPink), int(yPink)
-
-			## draw circles
-			if radiusPink > 10:
-				princess.draw(frame)
+		## draw guardian and princess
+		guardian.draw(frame)
+		princess.draw(frame)
 
 		## delete outrange bullets
 		for bullet in bulletList:
@@ -100,16 +92,17 @@ def main():
 		# print hsv[detectX][detectY]
 		# cv2.circle(frame, (detectY, detectX), 5, (255,0,255), -1)
 
+		## show the frame
 		cv2.imshow('Tracking', frame)
-		# cv2.imshow('BG', backGround)
 
+		## key interruption
 		if cv2.waitKey(1) == ord('q'):
 			break
 
 		frameIndex += 1
 
 		## calculate FPS
-		endTime = clock()
+		# endTime = clock()
 		# print 1 / (endTime - startTime)
 
 	cap.release()
