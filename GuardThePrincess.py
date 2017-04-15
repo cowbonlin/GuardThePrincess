@@ -10,18 +10,6 @@ def mouseCallback(event, x, y, flag, param):
 		detectX, detectY = y, x
 		print x, y
 
-def removeArray(list, value):
-	if len(list) == 1:
-		return
-	index = 0
-	size = len(list)
-	while index != size and not np.array_equal(list[index], value):
-		index += 1
-	if index != size:
-		list.pop(index)
-	else:
-		raise ValueError('array not found in list. cowbon')
-
 def main():
 
 	cap = cv2.VideoCapture(0)
@@ -65,11 +53,6 @@ def main():
 			## largest contour
 			maxContour = max(contoursYellow, key=cv2.contourArea)
 			((x,y), radius) = cv2.minEnclosingCircle(maxContour)
-
-			# ## second largest contour
-			# removeArray(contoursYellow, maxContour)
-			# secMaxContour = max(contoursYellow, key=cv2.contourArea)
-			# ((x2,y2), radius2) = cv2.minEnclosingCircle(secMaxContour)
 
 			## draw circles
 			if radius > 10:
