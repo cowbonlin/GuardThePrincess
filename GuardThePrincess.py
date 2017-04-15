@@ -6,6 +6,9 @@ from time import clock
 
 detectX, detectY = 0, 0
 
+def distance(a, b):
+	return sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2)
+
 def mouseCallback(event, x, y, flag, param):
 	global detectX, detectY
 	if event == cv2.EVENT_LBUTTONDOWN:
@@ -22,14 +25,12 @@ def produceMask(image, lowerList, upperList):
 def setContour(thresh, character):
 	contours = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
 	if contours and len(contours) > 0:
-		## largest contour
 		maxContour = max(contours, key=cv2.contourArea)
 		((x,y), radius) = cv2.minEnclosingCircle(maxContour)
 		character.x, character.y = int(x), int(y)
 
 
 def main():
-
 	cap = cv2.VideoCapture(0)
 	height, width, depth = cap.read()[1].shape
 	frameIndex = 0.0
@@ -38,6 +39,7 @@ def main():
 	guardian = Character.Guardian()
 	princess = Character.Princess()
 	bulletList = []
+	corianderList = []
 
 	# mouse event capture
 	cv2.namedWindow('Tracking')
@@ -47,22 +49,15 @@ def main():
 
 	while(True):
 		# startTime = clock()
-		
-		## read the frame and flip
+
+		## Read the frame, Flip and Covert to HSV
 		sucFrame, frame = cap.read()
 		frame = cv2.flip(frame, 1)
-
-		## BGR -> HSV
 		hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
 		## mask the desire color and threshold
 		threshYellow = produceMask(hsv, [ 10,140,190], [ 45,230,256])
 		threshPink   = produceMask(hsv, [140,140,120], [180,220,256])
-
-		## display small thresh image
-		# smallFrame = cv2.resize(threshPink, (0,0), fx=0.25, fy=0.25)
-		# cv2.circle(smallFrame, (smallFrame.shape[1]/2,smallFrame.shape[0]/2), 3, (0,0,255), -1)
-		# cv2.imshow('small', smallFrame)
 		
 		## set contours
 		setContour(threshYellow, guardian)
@@ -72,6 +67,8 @@ def main():
 		guardian.draw(frame)
 		princess.draw(frame)
 
+		############################################################################################################
+		#### BULLET ####
 		## delete outrange bullets
 		for bullet in bulletList:
 			if bullet.strPoint[0] > width or bullet.strPoint[0] < 0 or bullet.strPoint[1] > height or bullet.strPoint[1] < 0:
@@ -79,14 +76,50 @@ def main():
 				del bullet
 
 		## new bullet
-		if frameIndex %3 == 0:
+		fireRate = int(6 * sqrt((guardian.x-princess.x)**2 + (guardian.y-princess.y)**2) / 1000) + 2
+		if frameIndex % fireRate == 0:
 			bullet = Character.Bullet(guardian.x, guardian.y, princess.x, princess.y, frameIndex)
 			bulletList.append(bullet)
 
 		## draw bullets
 		for bullet in bulletList:
-			bullet.updatePosition(30)
+			bullet.updatePosition()
 			bullet.draw(frame)
+
+		#### CORIANDER ####
+		
+		## new coriander
+		if frameIndex % 10 ==0:
+			coriander = Character.Coriander(width, 0)
+			corianderList.append(coriander)
+
+		## move toward the princess
+		for coriander in corianderList:
+			coriander.updatePosition(princess)
+
+		## bullet hit corianders!
+		for bullet in bulletList:
+			for coriander in corianderList:
+				if not bullet.death and distance(bullet.endPoint, (coriander.x, coriander.y)) <= coriander.radius:
+					coriander.death = True
+					bullet.death = True
+		
+		## remove dead corianders and used bullets
+		for coriander in corianderList:
+			if coriander.death:
+				corianderList.remove(coriander)
+				del coriander
+
+		for bullet in bulletList:
+			if bullet.death:
+				bulletList.remove(bullet)
+				del bullet
+
+		## draw corianders
+		for coriander in corianderList:
+			coriander.draw(frame)
+
+		############################################################################################################
 
 		## detect the point
 		# print hsv[detectX][detectY]
