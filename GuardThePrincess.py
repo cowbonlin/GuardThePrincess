@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 import Character
+from math import sqrt
 
 detectX, detectY = 0, 0
 
@@ -14,6 +15,8 @@ def main():
 
 	cap = cv2.VideoCapture(0)
 	height, width, depth = cap.read()[1].shape
+
+	# mouse event capture
 	cv2.namedWindow('Tracking')
 	cv2.setMouseCallback('Tracking', mouseCallback)
 	global detectX, detectY
@@ -23,7 +26,7 @@ def main():
 		## read the frame and flip
 		sucFrame, frame = cap.read()
 		frame = cv2.flip(frame, 1)
-
+		backGround = np.zeros((height,width,3), np.uint8)
 
 		## BGR -> HSV
 		hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -36,7 +39,7 @@ def main():
 		sucThresh, threshYellow = cv2.threshold(maskYellow, 32, 255, cv2.THRESH_BINARY)
 
 		## pink
-		lowerPink = np.array([140,140,170])
+		lowerPink = np.array([140,140,120])
 		upperPink = np.array([180,220,256])
 		maskPink = cv2.inRange(hsv, lowerPink, upperPink)
 		sucThresh, threshPink = cv2.threshold(maskPink, 32, 255, cv2.THRESH_BINARY)
@@ -46,18 +49,22 @@ def main():
 		cv2.circle(smallFrame, (smallFrame.shape[1]/2,smallFrame.shape[0]/2), 3, (0,0,255), -1)
 		cv2.imshow('small', smallFrame)
 
+		## create objects
+		guardian = Character.Guardian()
+		princess = Character.Princess()
+
 		## find and draw contours
 		## yellow
 		contoursYellow = cv2.findContours(threshYellow.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
 		if contoursYellow and len(contoursYellow) > 0:
 			## largest contour
 			maxContour = max(contoursYellow, key=cv2.contourArea)
-			((x,y), radius) = cv2.minEnclosingCircle(maxContour)
+			((xYellow,yYellow), radiusYellow) = cv2.minEnclosingCircle(maxContour)
+			guardian.x, guardian.y = int(xYellow), int(yYellow)
 
 			## draw circles
-			if radius > 10:
-				cv2.circle(frame, (int(x), int(y)), int(radius), (0,255,0), 2)
-				# cv2.circle(frame, (int(x2), int(y2)), int(radius2), (255,255,0), 2)
+			if radiusYellow > 10:
+				cv2.circle(backGround, (guardian.x,guardian.y), 40, (0,255,255), 2)
 
 		## pink
 		contoursPink = cv2.findContours(threshPink.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
@@ -65,20 +72,24 @@ def main():
 			## largest contour
 			maxContour = max(contoursPink, key=cv2.contourArea)
 			((xPink,yPink), radiusPink) = cv2.minEnclosingCircle(maxContour)
+			princess.x, princess.y = int(xPink), int(yPink)
 
 			## draw circles
 			if radiusPink > 10:
-				cv2.circle(frame, (int(xPink), int(yPink)), int(radiusPink), (255,255,0), 2)
+				cv2.circle(backGround, (princess.x,princess.y), 40, (255,0,255), 2)
 
+		## draw a line
+		bullet = Character.Bullet(guardian.x, guardian.y, princess.x, princess.y)
+		cv2.line(backGround, (guardian.x,guardian.y), (bullet.endPointX, bullet.endPointY), (0,0,255), 5)
 
 		## detect the point
 		# print hsv[detectX][detectY]
 		cv2.circle(frame, (detectY, detectX), 5, (255,0,255), -1)
 
 		cv2.imshow('Tracking', frame)
+		cv2.imshow('BG', backGround)
 
-		key = cv2.waitKey(1)
-		if key == ord('q'):
+		if cv2.waitKey(1) == ord('q'):
 			break
 
 	cap.release()
