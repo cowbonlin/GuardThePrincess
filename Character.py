@@ -7,6 +7,8 @@ red = (0,0,255)
 green = (0,255,0)
 
 def normalize(vector):
+	if vector==(0,0):
+		return (0,0)
 	return (vector[0]/sqrt(vector[0]**2+vector[1]**2), vector[1]/sqrt(vector[0]**2+vector[1]**2))
 
 class Princess(object):

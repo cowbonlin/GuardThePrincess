@@ -3,6 +3,7 @@ import cv2
 import Character
 from math import sqrt
 from time import clock
+from random import randint
 
 detectX, detectY = 0, 0
 
@@ -50,12 +51,12 @@ def main():
 	while(True):
 		# startTime = clock()
 
-		## Read the frame, Flip and Covert to HSV
+		## Read the frame and Flip
 		sucFrame, frame = cap.read()
 		frame = cv2.flip(frame, 1)
-		hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
 		## mask the desire color and threshold
+		hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 		threshYellow = produceMask(hsv, [ 10,140,190], [ 45,230,256])
 		threshPink   = produceMask(hsv, [140,140,120], [180,220,256])
 		
@@ -87,10 +88,17 @@ def main():
 			bullet.draw(frame)
 
 		#### CORIANDER ####
-		
 		## new coriander
 		if frameIndex % 10 ==0:
-			coriander = Character.Coriander(width, 0)
+			luckyNumber = randint(0,1280)
+			if   luckyNumber % 4 == 0:
+				coriander = Character.Coriander(luckyNumber, 0)
+			elif luckyNumber % 4 == 1:
+			 	coriander = Character.Coriander(luckyNumber, height)
+			elif luckyNumber % 4 == 2:
+			 	coriander = Character.Coriander(0, luckyNumber%720)
+			else:
+				coriander = Character.Coriander(width, luckyNumber%720)
 			corianderList.append(coriander)
 
 		## move toward the princess
