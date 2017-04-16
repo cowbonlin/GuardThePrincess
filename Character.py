@@ -15,8 +15,9 @@ class Princess(object):
 	def __init__(self):
 		self.x = 0
 		self.y = 0
+		self.radius = 50
 	def draw(self, image):
-		cv2.circle(image, (self.x,self.y), 50, pink, 2)
+		cv2.circle(image, (self.x,self.y), self.radius, pink, 2)
 
 class Guardian(object):
 	def __init__(self):

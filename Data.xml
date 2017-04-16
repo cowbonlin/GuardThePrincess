@@ -1,0 +1,15 @@
+<?xml version="1.0" ?>
+<data>
+	<threshold name="yellow">
+		<lower>
+			<h></h>
+			<s></s>
+			<v></v>
+		</lower>
+		<upper>
+			<h></h>
+			<s></s>
+			<v></v>
+		</upper>
+	</threshold>
+</data>
