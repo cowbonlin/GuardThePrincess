@@ -11,9 +11,11 @@ def main():
 	game = Game(webCam)
 
 	## detect
-	detectStartTime = clock()
-	game.detectMode(detectStartTime)
-
+	# game.detectTest()
+	game.detectMode()
+	
+	## detect over
+	cv2.destroyAllWindows()	
 	print "Detect Over, Let's play a game!"
 
 	## play

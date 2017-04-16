@@ -5,6 +5,7 @@ pink = (255,0,255)
 yellow = (0,255,255)
 red = (0,0,255)
 green = (0,255,0)
+black = (0,0,0)
 
 def normalize(vector):
 	if vector==(0,0):
