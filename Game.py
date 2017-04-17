@@ -5,6 +5,10 @@ from math import sqrt
 from time import clock
 from random import randint
 
+def putTextCenter(image, text, position, font, size, color, thickness):
+	center = (cv2.getTextSize(text, font, size, thickness)[0][0]/2, cv2.getTextSize(text, font, size, thickness)[0][1]/2)
+	cv2.putText(image, text, (position[0]-center[0], position[1]-center[1]), font, size, color, thickness)
+
 def distance(a, b):
 	return sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2)
 
@@ -22,9 +26,9 @@ def setContour(thresh, character):
 		((x,y), radius) = cv2.minEnclosingCircle(maxContour)
 		character.x, character.y = int(x), int(y)
 
-def countDown(time, clock, startTime, frame, text):
+def countDown(time, clock, startTime, frame, text, timeToCount):
 	if time<clock-startTime<time+1:
-		cv2.putText(frame, text.format(3-time), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, Character.black)
+		cv2.putText(frame, text.format(timeToCount-time), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, Character.black)
 
 detectX, detectY = 0, 0
 def mouseCallback(event, x, y, flag, param):
@@ -34,13 +38,15 @@ def mouseCallback(event, x, y, flag, param):
 		print x, y
 
 class Game(object):
-	def __init__(self, webCam):
-		self.webCam = webCam
-		self.height, self.width, self.depth = webCam.read()[1].shape
+	def __init__(self):
+		self.webCam = cv2.VideoCapture(0)
+		self.height, self.width, self.depth = self.webCam.read()[1].shape
 		self.yellowMax = [0,0,0]
 		self.yellowMin = [255,255,255]
 		self.pinkMax = [0,0,0]
 		self.pinkMin = [255,255,255]
+		self.score = 0
+		self.gameOver = False
 
 	def prepareToDetect(self, startTime, index):
 		while clock()-startTime < 3:
@@ -58,7 +64,7 @@ class Game(object):
 
 			## count to 3
 			for time in range(3):
-				countDown(time, clock(), startTime, frame, "Please put the ball to the detect point in {0} seconds")
+				countDown(time, clock(), startTime, frame, "Please put the ball to the detect point in {0} seconds", 3)
 			
 			## show frame and key interrup						
 			cv2.imshow('Detect', frame)
@@ -85,15 +91,16 @@ class Game(object):
 		maxHSV  = [0,0,0]
 		minHSV  = [255,255,255]
 
+		## detect in 2 seconds
 		while clock()-startTime < 2:
 			## frame setup
 			frame = cv2.flip(self.webCam.read()[1], 1)
 			hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 			height, width, depth = frame.shape
 
-			## count to 3
-			for time in range(3):
-				countDown(time, clock(), startTime, frame, "Detecting... {0} seconds left")
+			## count to 2
+			for time in range(2):
+				countDown(time, clock(), startTime, frame, "Detecting... {0} seconds left", 2)
 			
 			if index == 0:
 				cv2.circle(frame, (self.width/2,self.height/2), 10, Character.red, -1)
@@ -111,7 +118,7 @@ class Game(object):
 				cv2.circle(frame, (self.width/7,6*self.height/7), 10, Character.red, -1)
 				detectPoint = hsv[6*self.height/7][self.width/7]
 			
-			print detectPoint
+			# print detectPoint
 
 			## detecting...
 			minHSV  = [min(minHSV[i], detectPoint[i]) for i in range(3)]
@@ -132,35 +139,33 @@ class Game(object):
 			self.pinkMax = [max(self.pinkMax[i], maxHSV[i]) for i in range(3)]
 
 	def detectMode(self):
-		# ## detect yellow
-		# for i in range(5):
-		# 	startTime = clock()
-		# 	self.prepareToDetect(startTime, i)
-		
-		# 	startTime = clock()
-		# 	self.detecting(startTime, i, "yellow")
-		# self.yellowMin = [min(max(self.yellowMin[i]-20, 0), 255) for i in range(3)]
-		# self.yellowMax = [min(max(self.yellowMax[i]+20, 0), 255) for i in range(3)]
-		# print "MIN YELLOW: ", self.yellowMin
-		# print "MAX YELLOW: ", self.yellowMax
-
-		## detect pink
+		#### detect yellow ####
+		## prepare and detect
 		for i in range(5):
-			startTime = clock()
-			self.prepareToDetect(startTime, i)
-		
-			startTime = clock()
-			self.detecting(startTime, i, "pink")
-		self.pinkMin = [min(max(self.pinkMin[i]-20, 0), 256) for i in range(3)]
-		self.pinkMax = [min(max(self.pinkMax[i]+20, 0), 256) for i in range(3)]
+			self.prepareToDetect(clock(), i)
+			self.detecting(clock(), i, "yellow")
+		## store the min and max hsv value
+		self.yellowMin = [min(max(self.yellowMin[i]-10, 0), 255) for i in range(3)]
+		self.yellowMax = [min(max(self.yellowMax[i]+10, 0), 255) for i in range(3)]
+		print "MIN YELLOW: ", self.yellowMin
+		print "MAX YELLOW: ", self.yellowMax
+
+		#### detect pink ####
+		## prepare and detect
+		for i in range(5):
+			self.prepareToDetect(clock(), i)
+			self.detecting(clock(), i, "pink")
+		## store the min and max hsv value
+		self.pinkMin = [min(max(self.pinkMin[i]-10, 0), 255) for i in range(3)]
+		self.pinkMax = [min(max(self.pinkMax[i]+10, 0), 255) for i in range(3)]
 		print "MIN PINK: ", self.pinkMin
 		print "MAX PINK: ", self.pinkMax
 
+		## close the detect window
+		cv2.destroyAllWindows()
 
-		
 
 	def playMode(self):
-		height, width, depth = self.webCam.read()[1].shape
 		frameIndex = 0.0
 
 		## create characters
@@ -169,7 +174,7 @@ class Game(object):
 		bulletList = []
 		corianderList = []
 
-		while True:
+		while not self.gameOver:
 			startTime = clock()
 
 			## Read the frame and Flip
@@ -178,21 +183,23 @@ class Game(object):
 			############################################################################################################
 			## mask the desire color and threshold
 			hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-			# threshYellow = produceMask(hsv, [ 10,140,190], [ 45,230,256])
-			# threshPink   = produceMask(hsv, [140,140,120], [180,220,256])
-			threshYellow = produceMask(hsv, self.yellowMin, self.yellowMax)
-			threshPink   = produceMask(hsv, self.pinkMin,   self.pinkMax)
+			threshYellow = produceMask(hsv, [  3,148,195], [ 34,245,255])
+			threshPink   = produceMask(hsv, [140,109,149], [174,216,255])
+			# threshYellow = produceMask(hsv, self.yellowMin, self.yellowMax)
+			# threshPink   = produceMask(hsv, self.pinkMin,   self.pinkMax)
 			
 			
 			## set contours
 			setContour(threshYellow, guardian)
 			setContour(threshPink, princess)
 
+			# frame = cv2.cvtColor(cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY),cv2.COLOR_GRAY2BGR)
+
 			############################################################################################################
 			#### BULLET ####
 			## delete outrange bullets
 			for bullet in bulletList:
-				if bullet.strPoint[0] > width or bullet.strPoint[0] < 0 or bullet.strPoint[1] > height or bullet.strPoint[1] < 0:
+				if bullet.strPoint[0] > self.width or bullet.strPoint[0] < 0 or bullet.strPoint[1] > self.height or bullet.strPoint[1] < 0:
 					bulletList.remove(bullet)
 					del bullet
 
@@ -210,11 +217,11 @@ class Game(object):
 				if   luckyNumber % 4 == 0:
 					coriander = Character.Coriander(luckyNumber, 0)
 				elif luckyNumber % 4 == 1:
-				 	coriander = Character.Coriander(luckyNumber, height)
+				 	coriander = Character.Coriander(luckyNumber, self.height)
 				elif luckyNumber % 4 == 2:
 				 	coriander = Character.Coriander(0, luckyNumber%720)
 				else:
-					coriander = Character.Coriander(width, luckyNumber%720)
+					coriander = Character.Coriander(self.width, luckyNumber%720)
 				corianderList.append(coriander)
 
 			## move toward the princess
@@ -228,26 +235,34 @@ class Game(object):
 					if not bullet.death and distance(bullet.endPoint, (coriander.x, coriander.y)) <= coriander.radius:
 						coriander.death = True
 						bullet.death = True
+						self.score += 1
 			
-			## remove dead corianders
-			for coriander in corianderList:
-				if coriander.death:
-					corianderList.remove(coriander)
-					del coriander
-
 			## remove used bullets
 			for bullet in bulletList:
 				if bullet.death:
 					bulletList.remove(bullet)
 					del bullet
 
-			#### Princess Dead ####
+			#### PPINCESS GETS HIT ####
 			for coriander in corianderList:
 				if distance((princess.x,princess.y), (coriander.x,coriander.y)) <= princess.radius+coriander.radius:
-					cv2.putText(frame, "GAME OVER", (width/2,height/2), cv2.FONT_HERSHEY_DUPLEX, 2, Character.green)
+					princess.life -= 1
+					# self.score = 0
+					coriander.death = True
+
+			## remove dead corianders
+			for coriander in corianderList:
+				if coriander.death:
+					corianderList.remove(coriander)
+					del coriander
+
+			######################################  Princess Die: Game Over  ###########################################
+			if princess.life == 0:
+				self.gameOver = True
+
 
 			############################################################################################################
-			#### DRAW ####
+			#### DRAW ####	
 			## bullets
 			for bullet in bulletList:
 				bullet.updatePosition()
@@ -260,9 +275,12 @@ class Game(object):
 			## guardian and princess
 			guardian.draw(frame)
 			princess.draw(frame)
+
+			## score
+			putTextCenter(frame, "SCORE: "+str(self.score), (self.width/2, self.height/10), cv2.FONT_HERSHEY_SIMPLEX, 1, Character.scoreRed, 2)
 			############################################################################################################
 			## show the frame
-			cv2.imshow('Tracking', threshPink)
+			cv2.imshow('Tracking', frame)
 
 			## key interruption
 			if cv2.waitKey(1) == ord('q'):
@@ -274,5 +292,41 @@ class Game(object):
 			endTime = clock()
 			print 1 / (endTime - startTime)
 
-	def gameOver(self):
-		pass
+			cv2.destroyAllWindows()
+
+	def heavenMode(self):
+		while True:
+			frame = cv2.flip(self.webCam.read()[1], 1)
+
+			## create characters
+			guardian = Character.Guardian()
+			princess = Character.Princess()
+
+			############################################################################################################
+			## mask the desire color and threshold
+			hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+			threshYellow = produceMask(hsv, [  3,148,195], [ 34,245,255])
+			threshPink   = produceMask(hsv, [140,109,149], [174,216,255])
+			# threshYellow = produceMask(hsv, self.yellowMin, self.yellowMax)
+			# threshPink   = produceMask(hsv, self.pinkMin,   self.pinkMax)
+			
+			
+			## set contours
+			setContour(threshYellow, guardian)
+			setContour(threshPink, princess)
+
+			frame = cv2.blur(frame, (22,22))
+
+			################################################  Draw  #####################################################
+			putTextCenter(frame, "GAME OVER", (self.width/2,4*self.height/7), cv2.FONT_HERSHEY_SIMPLEX, 2, Character.corianderGreen, 7)
+
+			guardian.draw(frame)
+			princess.draw(frame)
+
+			cv2.imshow("Heaven", frame)
+			if cv2.waitKey(1) == ord('q'):
+				break
+
+	def leaveGame(self):
+		self.webCam.release()
+		cv2.destroyAllWindows()

@@ -1,28 +1,14 @@
-import cv2
-import Character
 from Game import Game
-from time import clock
 
 def main():
-	## capture the webCam
-	webCam = cv2.VideoCapture(0)
+	game = Game()
 
-	## create a game
-	game = Game(webCam)
-
-	## detect
-	# game.detectTest()
-	game.detectMode()
+	# game.detectMode()
 	
-	## detect over
-	cv2.destroyAllWindows()	
-	print "Detect Over, Let's play a game!"
+	# game.playMode()
 
-	## play
-	game.playMode()
+	game.heavenMode()
 
-	## leave
-	webCam.release()
-	cv2.destroyAllWindows()
+	game.leaveGame()
 
 main()

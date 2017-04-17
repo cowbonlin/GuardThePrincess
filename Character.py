@@ -6,6 +6,8 @@ yellow = (0,255,255)
 red = (0,0,255)
 green = (0,255,0)
 black = (0,0,0)
+scoreRed = (45,38,141)
+corianderGreen = (45,137,100)	
 
 def normalize(vector):
 	if vector==(0,0):
@@ -16,16 +18,18 @@ class Princess(object):
 	def __init__(self):
 		self.x = 0
 		self.y = 0
-		self.radius = 50
+		self.radius = 30
+		self.life = 3
 	def draw(self, image):
-		cv2.circle(image, (self.x,self.y), self.radius, pink, 2)
+		cv2.circle(image, (self.x,self.y), self.radius, pink, -1)
 
 class Guardian(object):
 	def __init__(self):
 		self.x = 50
 		self.y = 50
+		self.radius = 40
 	def draw(self, image):
-		cv2.circle(image, (self.x,self.y), 50, yellow, 2)
+		cv2.circle(image, (self.x,self.y), self.radius, yellow, -1)
 
 class Coriander(object):
 	def __init__(self, x, y):
