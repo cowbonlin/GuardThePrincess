@@ -6,8 +6,10 @@ yellow = (0,255,255)
 red = (0,0,255)
 green = (0,255,0)
 black = (0,0,0)
+white = (255,255,255)
 scoreRed = (45,38,141)
-corianderGreen = (45,137,100)	
+corianderGreen = (45,137,100)
+
 
 def normalize(vector):
 	if vector==(0,0):
@@ -38,7 +40,7 @@ class Coriander(object):
 		self.radius = 50
 		self.death = False
 	def draw(self, image):
-		cv2.circle(image, (self.x,self.y), self.radius, green, -1)
+		cv2.circle(image, (self.x,self.y), self.radius, corianderGreen, -1)
 	def updatePosition(self, princess):
 		vConst = 8
 		vector = normalize((princess.x-self.x, princess.y-self.y))
