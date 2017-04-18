@@ -3,6 +3,6 @@ from Game import Game
 def main():
 	game = Game()
 
-	game.playMode()
+	game.startMode()
 
 main()

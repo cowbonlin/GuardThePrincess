@@ -41,8 +41,8 @@ class Coriander(object):
 		self.death = False
 	def draw(self, image):
 		cv2.circle(image, (self.x,self.y), self.radius, corianderGreen, -1)
-	def updatePosition(self, princess):
-		vConst = 8
+	def updatePosition(self, princess, score):
+		vConst = 10 + 5*score/10
 		vector = normalize((princess.x-self.x, princess.y-self.y))
 		self.x += int(vConst*vector[0])
 		self.y += int(vConst*vector[1])
